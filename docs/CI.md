@@ -162,3 +162,32 @@ curl -s -u $JENKINS_USER:$JENKINS_PASS "http://localhost:8080/job/my-cli/1/conso
 
 Result: build #1 finished with `SUCCESS`; `Checkout`, `Build`, `Test`, and
 `Package` stages all ran and `my-cli.jar` was archived as a build artifact.
+
+## 10. Add code coverage
+
+The job page only showed test results, not coverage. Checked which Jenkins
+coverage plugin was installed by inspecting the container's plugin
+directory directly (no REST credentials needed for this):
+
+```bash
+docker exec jenkins sh -c "ls /var/jenkins_home/plugins | grep -i -E 'coverage|jacoco'"
+```
+
+Result: `coverage` / `coverage.jpi` (the newer Coverage plugin, successor to
+the classic JaCoCo plugin) was installed.
+
+Changes:
+
+- **`pom.xml`**: added the `jacoco-maven-plugin` (0.8.12) bound to the
+  `test` phase — `prepare-agent` instruments the JVM before tests run, and
+  `report` generates `target/site/jacoco/jacoco.xml` (and an HTML report)
+  right after Surefire finishes.
+- **`Jenkinsfile`**: added a `recordCoverage` step to the `Test` stage's
+  `post { always { ... } }` block, alongside the existing `junit` step:
+
+  ```groovy
+  recordCoverage tools: [[parser: 'JACOCO', pattern: 'target/site/jacoco/jacoco.xml']]
+  ```
+
+Verified locally with `./mvnw -B clean test` that `target/site/jacoco/jacoco.xml`
+is produced before wiring it into the pipeline.
