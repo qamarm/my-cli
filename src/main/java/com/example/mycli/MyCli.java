@@ -21,8 +21,12 @@ public class MyCli implements Runnable {
         new CommandLine(this).usage(System.out);
     }
 
+    static int execute(String[] args) {
+        return new CommandLine(new MyCli()).execute(args);
+    }
+
+    @Generated
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new MyCli()).execute(args);
-        System.exit(exitCode);
+        System.exit(execute(args));
     }
 }
